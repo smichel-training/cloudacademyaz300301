@@ -23,7 +23,7 @@ EnvironmentCode = "DEV"
 #   Production
 EnvironmentName = "Development"
 
-ProjectName = "SSET"
+ProjectName = "Scaleset"
 
 # Build version
 # To be updated

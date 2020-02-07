@@ -1,3 +1,4 @@
+
 # Create a new resource group# Create a resource group if it doesn’t exist
 resource "azurerm_resource_group" "myterraformgroup" {
     name     = "${var.EnvironmentCode}-${var.ProjectName}-rg"
@@ -8,13 +9,6 @@ resource "azurerm_resource_group" "myterraformgroup" {
         project = var.ProjectName
         version = var.BuildVersion
     }
-}
-
-resource "random_string" "fqdn" {
- length  = 6
- special = false
- upper   = false
- number  = false
 }
 
 # Create virtual network
@@ -44,9 +38,8 @@ resource "azurerm_public_ip" "myterraformpublicip" {
     name                        = "${var.ProjectName}-PublicIP"
     location                    = var.location
     resource_group_name         = azurerm_resource_group.myterraformgroup.name
-    allocation_method           = "Static"
-    //domain_name_label           = azurerm_resource_group.myterraformgroup.name
-    domain_name_label            = random_string.fqdn.result
+    allocation_method           = "static"
+    domain_name_label           = azurerm_resource_group.myterraformgroup.name
 
     tags = {
         environment = var.EnvironmentName
@@ -55,14 +48,13 @@ resource "azurerm_public_ip" "myterraformpublicip" {
     }   
 }
 
-
 resource "azurerm_lb" "myLoadBalancer" {
     name                        = "${var.ProjectName}-LB"
     location                    = var.location
     resource_group_name         = azurerm_resource_group.myterraformgroup.name
 
     frontend_ip_configuration {
-        name                 = "NLBPublicIP"
+        name                 = "${var.ProjectName}-LBPublicIP"
         public_ip_address_id = azurerm_public_ip.myterraformpublicip.id
   }
 
@@ -80,28 +72,6 @@ resource "azurerm_lb_backend_address_pool" "myLBBackend" {
     name                        = "${var.ProjectName}-BackEndAddressPool"
 }
 
-resource "azurerm_lb_probe" "myLBProbe" {
-    resource_group_name = azurerm_resource_group.myterraformgroup.name
-    loadbalancer_id     = azurerm_lb.myLoadBalancer.id
-    name                = "LBProbe"
-    port                = "3389"
-}
-
-
-
-resource "azurerm_lb_rule" "example" {
-  resource_group_name            = azurerm_resource_group.myterraformgroup.name
-  loadbalancer_id                = azurerm_lb.myLoadBalancer.id
-  probe_id                       = azurerm_lb_probe.myLBProbe.id
-  backend_address_pool_id        = azurerm_lb_backend_address_pool.myLBBackend.id
-  frontend_ip_configuration_name = "NLBPublicIP"
-  name                           = "LBRule"
-  protocol                       = "Tcp"
-  frontend_port                  = 3389
-  backend_port                   = 3389
-}
-
-/*
 resource "azurerm_lb_nat_pool" "mylbnatpool" {
     resource_group_name            = azurerm_resource_group.myterraformgroup.name
     name                           = "rdp"
@@ -110,9 +80,17 @@ resource "azurerm_lb_nat_pool" "mylbnatpool" {
     frontend_port_start            = 50000
     frontend_port_end              = 50119
     backend_port                   = 3389
-    frontend_ip_configuration_name = "NLBPublicIP"
+    frontend_ip_configuration_name = "${var.ProjectName}-LBPublicIP"
 }
-*/
+
+resource "azurerm_lb_probe" "myLBProbe" {
+    resource_group_name = azurerm_resource_group.myterraformgroup.name
+    loadbalancer_id     = azurerm_lb.myLoadBalancer.id
+    name                = "http-probe"
+    protocol            = "Http"
+    request_path        = "/health"
+    port                = 8080
+}
 
 resource "azurerm_virtual_machine_scale_set" "example" {
     name                        = "${var.ProjectName}-scaleset"
@@ -147,7 +125,7 @@ resource "azurerm_virtual_machine_scale_set" "example" {
   }
 
   storage_profile_os_disk {
-    name              = ""
+    name              = "myOsDisk"
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"
@@ -166,19 +144,6 @@ resource "azurerm_virtual_machine_scale_set" "example" {
         admin_password = var.windows-admin-password
   }
 
-  network_profile {
-    name    = "terraformnetworkprofile"
-    primary = true
-
-    ip_configuration {
-      name                                   = "TestIPConfiguration"
-      subnet_id                              = azurerm_subnet.myterraformsubnet.id
-      load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.myLBBackend.id]
-      //load_balancer_inbound_nat_rules_ids    = [azurerm_lb_nat_pool.mylbnatpool.id]
-      primary = true
-    }
-  }
-
       tags = {
         environment = var.EnvironmentName
         project = var.ProjectName
@@ -187,6 +152,18 @@ resource "azurerm_virtual_machine_scale_set" "example" {
 
  }
 
+network_profile {
+    name    = "terraformnetworkprofile"
+    primary = true
+
+    ip_configuration {
+      name                                   = "TestIPConfiguration"
+      primary                                = true
+      subnet_id                              = azurerm_subnet.myterraformsubnet.id
+      load_balancer_backend_address_pool_ids = ["${azurerm_lb_backend_address_pool.myLBBackend.id}"]
+      load_balancer_inbound_nat_rules_ids    = ["${azurerm_lb_nat_pool.mylbnatpoo.id}"]
+    }
+  }
 
 
 # Create Network Security Group and rule
