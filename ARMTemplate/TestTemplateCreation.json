@@ -1,0 +1,35 @@
+  
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "0.0.0.1",
+    "parameters": {
+        "adminaccount": {
+            "type": "string",
+            "metadata": {
+                "description": "Adminaccount is used for Windows Administrator logon"
+            }
+        }
+    },
+
+    "resources": [
+        {
+            "name": "SmicCache",
+            //"type": "Microsoft.Cache/Redis",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2019-07-01",
+            "location": "[variables('location')]",
+            "properties":{
+                
+            }
+        }
+
+    ],
+
+    "variables": {
+        "location": "West Europe"
+    },
+
+    "outputs": {
+
+    }
+}
