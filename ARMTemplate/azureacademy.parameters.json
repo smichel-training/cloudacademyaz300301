@@ -1,0 +1,21 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "adminUsername": {
+        "value": "student"
+       },
+      "adminPassword": {
+        "value": "1Cloud_Academy_Labs!"
+      },
+      "windowsOSVersion": {
+        "value": "2019-Datacenter-smalldisk"
+      },
+      "VMSize": {
+        "value": "Standard_B1s"
+      },
+      "numberOfVMs": {
+        "value": 2
+      }
+    }
+  }
